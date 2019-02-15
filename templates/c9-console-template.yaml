@@ -17,8 +17,8 @@ Resources:
     Properties:
       Description: 'Cloud9 IDE console for EKS Management'
       Repositories:
-        - RepositoryUrl: https://git-codecommit.us-west-2.amazonaws.com/v1/repos/Zero
-          PathComponent: /Zero
+        - RepositoryUrl: https://github.com/darkreapyre/HaaS
+          PathComponent: /HaaS
       AutomaticStopTimeMinutes: 30
       InstanceType: m4.large
       Name: !Join 
