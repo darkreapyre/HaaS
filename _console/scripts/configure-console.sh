@@ -29,18 +29,18 @@ export C9_MASTER_STACK=${C9_MASTER_STACK%?}
 export C9_MASTER_STACK=${C9_MASTER_STACK#aws-cloud9-}
 export AWS_MASTER_STACK=${C9_MASTER_STACK%-Console}
 export S3_BUCKET=s3://$(aws cloudformation describe-stack-resource --stack-name $AWS_MASTER_STACK --logical-resource-id "Bucket" | jq -r '.StackResourceDetail.PhysicalResourceId')
-export S3_PREFIX=${AWS_MASTER_STACK}/input
+#export S3_PREFIX=${AWS_MASTER_STACK}/input
 
 # Generate SSH Key
-echo -en "\nCreating SSH Key ...\n"
-CURRENT_KEY=$(aws ec2 describe-key-pairs --key-name $AWS_MASTER_STACK --query 'KeyPairs[].KeyName' --output text 2>/dev/null)
-if [[ $CURRENT_KEY==$AWS_MASTER_STACK ]]; then
-    echo -en "\nExisting Key Pair found, deleting ...\n"
-    rm -f $HOME/.ssh/id_rsa*
-    aws ec2 delete-key-pair --key-name $AWS_MASTER_STACK
-fi
-ssh-keygen -t rsa -N "" -f ~/.ssh/id_rsa
-aws ec2 import-key-pair --key-name "${AWS_MASTER_STACK}" --public-key-material file://~/.ssh/id_rsa.pub
+#echo -en "\nCreating SSH Key ...\n"
+#CURRENT_KEY=$(aws ec2 describe-key-pairs --key-name $AWS_MASTER_STACK --query 'KeyPairs[].KeyName' --output text 2>/dev/null)
+#if [[ $CURRENT_KEY==$AWS_MASTER_STACK ]]; then
+#    echo -en "\nExisting Key Pair found, deleting ...\n"
+#    rm -f $HOME/.ssh/id_rsa*
+#    aws ec2 delete-key-pair --key-name $AWS_MASTER_STACK
+#fi
+#ssh-keygen -t rsa -N "" -f ~/.ssh/id_rsa
+#aws ec2 import-key-pair --key-name "${AWS_MASTER_STACK}" --public-key-material file://~/.ssh/id_rsa.pub
 
 # Persist deployment-specific  variables
 echo -en "\nSaving configuration ...\n"
@@ -51,5 +51,9 @@ echo "export AWS_STACK_NAME=$AWS_STACK_NAME" >> ~/.bashrc
 echo "export C9_MASTER_STACK"=$C9_MASTER_STACK >> ~/.bashrc
 echo "export AWS_MASTER_STACK=$AWS_MASTER_STACK" >> ~/.bashrc
 echo "export S3_BUCKET=$S3_BUCKET" >> ~/.bashrc
-echo "export S3_PREFIX=$S3_PREFIX" >> ~/.bashrc
+#echo "export S3_PREFIX=$S3_PREFIX" >> ~/.bashrc
 echo -en "\nConsole configuration complete!\n"
+
+# Upload the master contents for the model to S3 to simulate the GitOps `push`
+curl -L -o /tmp/master.zip http://github.com/darkreapyre/HaaS/master/
+aws s3 cp /tmp/master.zip s://$S3_BUCKET/

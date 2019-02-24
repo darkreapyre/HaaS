@@ -1,10 +1,17 @@
 #!/bin/bash
 
+
+# Cutomize bucket name
+S3_BUCKET=
+
 #Customize stack name as needed
-STACK_NAME=${AWS_MASTER_STACK}-Cluster
+STACK_NAME=mask-rcnn
 
 # cfn template name
-CFN_TEMPLATE=deeplearning-cfn-template.yaml
+CFN_TEMPLATE=deeplearning-cfn-template.json
+
+# Cutomize bucket prefix if needed
+S3_PREFIX=mask-rcnn/deeplearning-ami/input
 
 # Customize CIDR for SSH 
 SSH_LOCATION=0.0.0.0/0
@@ -29,7 +36,7 @@ EFS_ID=
 INSTANCE_TYPE=p3.16xlarge
 
 # EC2 key pair name
-KEY_NAME=$AWS_MASTER_STACK
+KEY_NAME=
 
 # AWS Region; customize as needed 
 AWS_REGION=us-east-1
@@ -41,7 +48,7 @@ AWS_AZ=us-east-1d
 EFS_SERVES=false
 
 aws cloudformation create-stack --region $AWS_REGION  --stack-name $STACK_NAME \
---template-body file://../templates/$CFN_TEMPLATE \
+--template-body file://$CFN_TEMPLATE \
 --capabilities CAPABILITY_NAMED_IAM \
 --parameters \
 ParameterKey=ActivateCondaEnv,ParameterValue=tensorflow_p36 \

@@ -47,15 +47,13 @@ Resources:
             Action:
               - 'sts:AssumeRole'
       Policies:
-        - PolicyName: eks-service
+        - PolicyName: cloudformation
           PolicyDocument:
             Version: 2012-10-17
             Statement:
               - Effect: Allow
                 Action:
-                  - 'eks:*'
-                  - 'cloudformation:CreateStack'
-                  - 'cloudformation:UpdateStack'
+                  - 'cloudformation:*'
                 Resource: '*'
       ManagedPolicyArns:
         - 'arn:aws:iam::aws:policy/AmazonEC2FullAccess'

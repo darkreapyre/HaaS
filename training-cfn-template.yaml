@@ -1,0 +1,9 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: >-
+    Creates a DeepLearning Cluster with one Master and a variable number of Workers, using FSx for Lustre and running Horovod model training jobs via MPI.
+Parameters: {}
+Resources:
+    DataBucket:
+        Type: AWS::S3::Bucket
+        Description: >-
+            S3 Bucket hosting the training input data, as the backend to FSx Lustre.
