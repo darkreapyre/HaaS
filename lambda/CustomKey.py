@@ -1,7 +1,7 @@
 """
 CloudFormation Custom Resource to create EC2 KeyPair and upload the `.pem` to S3.
 
-NOTE: The KeyPair will be used by the ` ` Lambda function tlog into the cluster master and start `run.sh`
+NOTE: The KeyPair will be used by the ` ` Lambda function to log into the cluster master and start `run.sh`
 """
 import os
 import logging
