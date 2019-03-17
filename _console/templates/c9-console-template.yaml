@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: 2010-09-09
-Description: Cloud9 IDE as EKS Console
+Description: Cloud9 IDE Deeplearning Cluster Console
 Metadata: {}
 Parameters:
   SubnetId:
@@ -15,7 +15,7 @@ Resources:
   Console:
     Type: 'AWS::Cloud9::EnvironmentEC2'
     Properties:
-      Description: 'Cloud9 IDE console for EKS Management'
+      Description: 'Cloud9 IDE console for Deeplearning Cluster Management'
       Repositories:
         - RepositoryUrl: https://github.com/darkreapyre/HaaS
           PathComponent: /HaaS
