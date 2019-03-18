@@ -64,6 +64,7 @@ Resources:
         - 'arn:aws:iam::aws:policy/AWSCloudFormationReadOnlyAccess'
         - 'arn:aws:iam::aws:policy/AWSCodeCommitFullAccess'
         - 'arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryFullAccess'
+        - 'arn:aws:iam::aws:policy/AmazonSNSFullAccess'
       Path: /
 
   ConsoleInstanceProfile:
