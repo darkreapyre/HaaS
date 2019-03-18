@@ -65,6 +65,7 @@ Resources:
         - 'arn:aws:iam::aws:policy/AWSCodeCommitFullAccess'
         - 'arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryFullAccess'
         - 'arn:aws:iam::aws:policy/AmazonSNSFullAccess'
+        - 'arn:aws:iam::aws:policy/AWSLambdaFullAccess'
       Path: /
 
   ConsoleInstanceProfile:
