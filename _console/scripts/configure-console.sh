@@ -56,4 +56,4 @@ echo -en "\nConsole configuration complete!\n"
 
 # Upload the master contents for the model to S3 to simulate the GitOps `push`
 curl -L -o /tmp/master.zip http://github.com/darkreapyre/HaaS/master/
-aws s3 cp /tmp/master.zip s://$S3_BUCKET/
+aws s3 cp /tmp/master.zip s3://$S3_BUCKET/master.zip
