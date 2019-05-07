@@ -92,6 +92,10 @@ def create_models(backbone_retinanet, num_classes, weights, multi_gpu=0, freeze_
 
 
 def create_callbacks(model, training_model, prediction_model, validation_generator, args):
+    if args.snapshot_path:
+        # ensure directory created first; otherwise h5py will error after epoch.
+        makedirs(args.snapshot_path)
+    
     callbacks = [
         hvd.callbacks.BroadcastGlobalVariablesCallback(0),
         hvd.callbacks.MetricAverageCallback(),
@@ -274,13 +278,24 @@ def create_generators(args):
 
 def check_args(parsed_args):
     """
-    Function to check for inherent contradictions within parsed arguments.
+    Function to check for inherent contradictions within parsed arguments and to
+    bypass having to create argument subparsers for the path to specific dataset types
+    in order to fit within Horovod/SageMaker `Command_Args`.
+    
     For example, batch_size < num_gpus
     Intended to raise errors prior to backend initialisation.
 
     :param parsed_args: parser.parse_args()
     :return: parsed_args
     """
+    if parsed_args.dataset_type == 'coco':
+        parsed_args.coco_path = parsed_args.dataset_path
+
+    if parsed_args.dataset_type =='pascal':
+        parsed_args.pascal_path = parsed_args.dataset_path
+
+    if parsed_args.dataset_type == 'kitti':
+        parsed_args.kitti_path = parsed_args.dataset_path
 
     if parsed_args.multi_gpu > 1 and parsed_args.batch_size < parsed_args.multi_gpu:
         raise ValueError(
@@ -302,35 +317,40 @@ def check_args(parsed_args):
 
 
 def parse_args(args):
-    parser     = argparse.ArgumentParser(description='Simple training script for training a RetinaNet network.')
-    subparsers = parser.add_subparsers(help='Arguments for specific dataset types.', dest='dataset_type')
-    subparsers.required = True
+    parser = argparse.ArgumentParser(description='Simple training script for training a RetinaNet network.')
+    """
+    Note: Bypassing the following subparses and inclusing their defaults into `check_args()`
+    """
+#    subparsers = parser.add_subparsers(help='Arguments for specific dataset types.', dest='dataset_type')
+#    subparsers.required = True
 
-    coco_parser = subparsers.add_parser('coco')
-    coco_parser.add_argument('coco_path', help='Path to dataset directory (ie. /tmp/COCO).')
+#    coco_parser = subparsers.add_parser('coco')
+#    coco_parser.add_argument('coco_path', help='Path to dataset directory (ie. /tmp/COCO).')
 
-    pascal_parser = subparsers.add_parser('pascal')
-    pascal_parser.add_argument('pascal_path', help='Path to dataset directory (ie. /tmp/VOCdevkit).')
+#    pascal_parser = subparsers.add_parser('pascal')
+#    pascal_parser.add_argument('pascal_path', help='Path to dataset directory (ie. /tmp/VOCdevkit).')
 
-    kitti_parser = subparsers.add_parser('kitti')
-    kitti_parser.add_argument('kitti_path', help='Path to dataset directory (ie. /tmp/kitti).')
+#    kitti_parser = subparsers.add_parser('kitti')
+#    kitti_parser.add_argument('kitti_path', help='Path to dataset directory (ie. /tmp/kitti).')
 
-    def csv_list(string):
-        return string.split(',')
+#    def csv_list(string):
+#        return string.split(',')
 
-    oid_parser = subparsers.add_parser('oid')
-    oid_parser.add_argument('main_dir', help='Path to dataset directory.')
-    oid_parser.add_argument('--version',  help='The current dataset version is v4.', default='v4')
-    oid_parser.add_argument('--labels-filter',  help='A list of labels to filter.', type=csv_list, default=None)
-    oid_parser.add_argument('--annotation-cache-dir', help='Path to store annotation cache.', default='.')
-    oid_parser.add_argument('--fixed-labels', help='Use the exact specified labels.', default=False)
+#    oid_parser = subparsers.add_parser('oid')
+#    oid_parser.add_argument('main_dir', help='Path to dataset directory.')
+#    oid_parser.add_argument('--version',  help='The current dataset version is v4.', default='v4')
+#    oid_parser.add_argument('--labels-filter',  help='A list of labels to filter.', type=csv_list, default=None)
+#    oid_parser.add_argument('--annotation-cache-dir', help='Path to store annotation cache.', default='.')
+#    oid_parser.add_argument('--fixed-labels', help='Use the exact specified labels.', default=False)
 
-    csv_parser = subparsers.add_parser('csv')
-    csv_parser.add_argument('annotations', help='Path to CSV file containing annotations for training.')
-    csv_parser.add_argument('classes', help='Path to a CSV file containing class label mapping.')
-    csv_parser.add_argument('--val-annotations', help='Path to CSV file containing annotations for validation (optional).')
+#    csv_parser = subparsers.add_parser('csv')
+#    csv_parser.add_argument('annotations', help='Path to CSV file containing annotations for training.')
+#    csv_parser.add_argument('classes', help='Path to a CSV file containing class label mapping.')
+#    csv_parser.add_argument('--val-annotations', help='Path to CSV file containing annotations for validation (optional).')
 
     group = parser.add_mutually_exclusive_group()
+    parser.add_argument('--dataset',         help='Training dataset Name.', dest='dataset_type')
+    parser.add_argument('--dataset-path',    help='Path to the training dataset.', dest='dataset_path', type=str)
     group.add_argument('--snapshot',          help='Resume training from a snapshot.')
     group.add_argument('--imagenet-weights',  help='Initialize the model with pretrained imagenet weights. This is the default behaviour.', action='store_const', const=True, default=True)
     group.add_argument('--weights',           help='Initialize the model with weights from a file.')
@@ -423,14 +443,6 @@ def main(args=None):
         verbose=1,
         callbacks=callbacks,
     )
-    
-#    # only one worker saves the model
-#    if hvd.rank() == 0:
-#        print("Converting model for inference ...\n")
-#        inference_model = models.convert_model(training_model)
-#        print("Saving inference model ...\n")
-#        inference_model.save(os.path.join(args.snapshot_path, 'model.h5'))
-
 
 if __name__ == '__main__':
     main()
