@@ -95,7 +95,7 @@ The pretrained MS COCO model can be downloaded [here](https://github.com/fizyr/k
  Average Recall     (AR) @[ IoU=0.50:0.95 | area=medium | maxDets=100 ] = 0.577
  Average Recall     (AR) @[ IoU=0.50:0.95 | area= large | maxDets=100 ] = 0.681
 ```
-
+<!--
 For training on Open Images Dataset [OID](https://storage.googleapis.com/openimages/web/index.html)
 or taking place to the [OID challenges](https://storage.googleapis.com/openimages/web/challenge.html), run:
 ```shell
@@ -115,8 +115,7 @@ keras_retinanet/bin/train.py oid /path/to/OID --labels-filter=Helmet,Tree
 # by adding the argument 'parent-label':
 keras_retinanet/bin/train.py oid /path/to/OID --parent-label=Boat
 ```
-
-
+-->
 For training on [KITTI](http://www.cvlibs.net/datasets/kitti/eval_object.php), run:
 ```shell
 # Running directly from the repository:
@@ -129,7 +128,7 @@ If you want to prepare the dataset you can use the following script:
 https://github.com/NVIDIA/DIGITS/blob/master/examples/object-detection/prepare_kitti_data.py
 ```
 
-
+<!--
 For training on a [custom dataset], a CSV file can be used as a way to pass the data.
 See below for more details on the format of these CSV files.
 To train using your CSV, run:
@@ -153,6 +152,7 @@ model.compile(
     optimizer=keras.optimizers.adam(lr=1e-5, clipnorm=0.001)
 )
 ```
+
 2) Create generators for training and testing data (an example is show in [`keras_retinanet.preprocessing.pascal_voc.PascalVocGenerator`](https://github.com/fizyr/keras-retinanet/blob/master/keras_retinanet/preprocessing/pascal_voc.py)).
 3) Use `model.fit_generator` to start training.
 
@@ -206,7 +206,7 @@ cow,0
 cat,1
 bird,2
 ```
-
+-->
 ## Debugging
 Creating your own dataset does not always work out of the box. There is a [`debug.py`](https://github.com/fizyr/keras-retinanet/blob/master/keras_retinanet/bin/debug.py) tool to help find the most common mistakes.
 
