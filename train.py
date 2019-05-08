@@ -92,17 +92,17 @@ def create_models(backbone_retinanet, num_classes, weights, multi_gpu=0, freeze_
 
 
 def create_callbacks(model, training_model, prediction_model, validation_generator, args):
-    if args.snapshot_path:
-        # ensure directory created first; otherwise h5py will error after epoch.
-        makedirs(args.snapshot_path)
-    
+    # Create Horovod callback    
     callbacks = [
         hvd.callbacks.BroadcastGlobalVariablesCallback(0),
         hvd.callbacks.MetricAverageCallback(),
         hvd.callbacks.LearningRateWarmupCallback(warmup_epochs=5, verbose=1)
     ]
 
-    if hvd.rank() == 0: # only one worker saves the checkpoint file
+    if hvd.rank() == 0 and args.snapshot_path: # only one worker saves the checkpoint file
+        # ensure directory created first; otherwise h5py will error after epoch.
+        makedirs(args.snapshot_path)
+        # Create a snapshot for the Epoch
         callbacks.append(
             keras.callbacks.ModelCheckpoint(
                 os.path.join(
