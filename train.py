@@ -208,6 +208,9 @@ def create_generators(args):
             image_min_side=args.image_min_side,
             image_max_side=args.image_max_side
         )
+    """
+    Note: `csv` and `oid` training is not currently supported.
+
     elif args.dataset_type == 'csv':
         train_generator = CSVGenerator(
             args.annotations,
@@ -253,6 +256,7 @@ def create_generators(args):
             image_min_side=args.image_min_side,
             image_max_side=args.image_max_side
         )
+    """
     elif args.dataset_type == 'kitti':
         train_generator = KittiGenerator(
             args.kitti_path,
@@ -280,7 +284,7 @@ def check_args(parsed_args):
     """
     Function to check for inherent contradictions within parsed arguments and to
     bypass having to create argument subparsers for the path to specific dataset types
-    in order to fit within Horovod/SageMaker `Command_Args`.
+    in order to fit within Horovod/SageMaker `Command_Args` parameter in `training_job.json`.
     
     For example, batch_size < num_gpus
     Intended to raise errors prior to backend initialisation.
@@ -319,7 +323,7 @@ def check_args(parsed_args):
 def parse_args(args):
     parser = argparse.ArgumentParser(description='Simple training script for training a RetinaNet network.')
     """
-    Note: Bypassing the following subparses and inclusing their defaults into `check_args()`
+    Note: Bypassing the following subparses and including the defaults into `check_args()`
     """
 #    subparsers = parser.add_subparsers(help='Arguments for specific dataset types.', dest='dataset_type')
 #    subparsers.required = True
