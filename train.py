@@ -353,11 +353,11 @@ def parse_args(args):
 #    csv_parser.add_argument('--val-annotations', help='Path to CSV file containing annotations for validation (optional).')
 
     group = parser.add_mutually_exclusive_group()
-    # MlOps/Horovod Framework specific parameters
+    # MlOps/Horovod Framework specific command line parameters
     parser.add_argument('--dataset-path',    help='Path to the training dataset.', dest='dataset_path', type=str)
     parser.add_argument('--output-path',     help='Path to the trained model output'., dest='output_path', type=str)
 
-    # keras-retinanet specific parameters
+    # keras-retinanet specific command line parameters
     parser.add_argument('--dataset',         help='Training dataset Name.', dest='dataset_type')
     group.add_argument('--snapshot',          help='Resume training from a snapshot.')
     group.add_argument('--imagenet-weights',  help='Initialize the model with pretrained imagenet weights. This is the default behaviour.', action='store_const', const=True, default=True)
@@ -452,7 +452,7 @@ def main(args=None):
         callbacks=callbacks,
     )
     
-    print("Training completed ...")
+    print('training completed ...)
 
 if __name__ == '__main__':
     main()
