@@ -99,14 +99,14 @@ def create_callbacks(model, training_model, prediction_model, validation_generat
         hvd.callbacks.LearningRateWarmupCallback(warmup_epochs=5, verbose=1)
     ]
 
-    if hvd.rank() == 0 and args.snapshot_path: # only one worker saves the checkpoint file
-        # ensure directory created first; otherwise h5py will error after epoch.
-        makedirs(args.snapshot_path)
+    if hvd.rank() == 0 and args.output_path: # only one worker saves the checkpoint file
+#        # ensure directory created first; otherwise h5py will error after epoch.
+#        makedirs(args.snapshot_path)
         # Create a snapshot for the Epoch
         callbacks.append(
             keras.callbacks.ModelCheckpoint(
                 os.path.join(
-                    args.snapshot_path,
+                    args.output_path,
                     'model.h5'
                 )
             )
@@ -353,8 +353,12 @@ def parse_args(args):
 #    csv_parser.add_argument('--val-annotations', help='Path to CSV file containing annotations for validation (optional).')
 
     group = parser.add_mutually_exclusive_group()
-    parser.add_argument('--dataset',         help='Training dataset Name.', dest='dataset_type')
+    # MlOps/Horovod Framework specific parameters
     parser.add_argument('--dataset-path',    help='Path to the training dataset.', dest='dataset_path', type=str)
+    parser.add_argument('--output-path',     help='Path to the trained model output'., dest='output_path', type=str)
+
+    # keras-retinanet specific parameters
+    parser.add_argument('--dataset',         help='Training dataset Name.', dest='dataset_type')
     group.add_argument('--snapshot',          help='Resume training from a snapshot.')
     group.add_argument('--imagenet-weights',  help='Initialize the model with pretrained imagenet weights. This is the default behaviour.', action='store_const', const=True, default=True)
     group.add_argument('--weights',           help='Initialize the model with weights from a file.')
@@ -401,7 +405,7 @@ def main(args=None):
 
     # create the model
     if args.snapshot is not None:
-        print('Loading model, this may take a few seconds ...')
+        print("Loading model, this may take a few seconds ...")
         model            = models.load_model(args.snapshot, backbone_name=args.backbone)
         training_model   = model
         prediction_model = retinanet_bbox(model=model)
@@ -447,6 +451,8 @@ def main(args=None):
         verbose=1,
         callbacks=callbacks,
     )
+    
+    print("Training completed ...")
 
 if __name__ == '__main__':
     main()
