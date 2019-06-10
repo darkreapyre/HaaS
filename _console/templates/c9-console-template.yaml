@@ -20,7 +20,7 @@ Resources:
         - RepositoryUrl: https://github.com/darkreapyre/HaaS
           PathComponent: /HaaS
       AutomaticStopTimeMinutes: 30
-      InstanceType: m4.large
+      InstanceType: m5.large
       Name: !Join 
         - ''
         - - !Ref 'AWS::StackName'
