@@ -6,6 +6,10 @@ Parameters:
     Description: Public Subnet for the console.
     Type: 'AWS::EC2::Subnet::Id'
     Default: ''
+  InstanceType:
+    Description: m5 not in east, m4 not in west
+    Type: String
+    Default: t2.large
 
 Mappings: {}
 
@@ -20,7 +24,7 @@ Resources:
         - RepositoryUrl: https://github.com/darkreapyre/HaaS
           PathComponent: /HaaS
       AutomaticStopTimeMinutes: 30
-      InstanceType: m5.large
+      InstanceType: !Ref InstanceType
       Name: !Join 
         - ''
         - - !Ref 'AWS::StackName'
