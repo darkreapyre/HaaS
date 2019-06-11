@@ -21,8 +21,8 @@ Resources:
     Properties:
       Description: 'Cloud9 IDE console for Deeplearning Cluster Management'
       Repositories:
-        - RepositoryUrl: https://github.com/darkreapyre/HaaS
-          PathComponent: /HaaS
+        - RepositoryUrl: https://github.com/darkreapyre/HaaS-dev
+          PathComponent: /HaaS-dev
       AutomaticStopTimeMinutes: 30
       InstanceType: !Ref InstanceType
       Name: !Join 
