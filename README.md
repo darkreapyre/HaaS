@@ -1,268 +1,393 @@
-# Keras RetinaNet [![Build Status](https://travis-ci.org/fizyr/keras-retinanet.svg?branch=master)](https://travis-ci.org/fizyr/keras-retinanet) [![DOI](https://zenodo.org/badge/100249425.svg)](https://zenodo.org/badge/latestdoi/100249425)
+# Fashion MNIST Tutorial
 
-Keras implementation of RetinaNet object detection as described in [Focal Loss for Dense Object Detection](https://arxiv.org/abs/1708.02002)
-by Tsung-Yi Lin, Priya Goyal, Ross Girshick, Kaiming He and Piotr Dollár.
+In this tutorial, you will learn how to apply Horovod to a [WideResNet](https://arxiv.org/abs/1605.07146) model, trained on the [Fashion MNIST](https://github.com/zalandoresearch/fashion-mnist) dataset.
 
-## Installation
+## Prerequisites
 
-1) Clone this repository.
-2) Ensure numpy is installed using `pip install numpy --user`
-3) In the repository, execute `pip install . --user`.
-   Note that due to inconsistencies with how `tensorflow` should be installed,
-   this package does not define a dependency on `tensorflow` as it will try to install that (which at least on Arch Linux results in an incorrect installation).
-   Please make sure `tensorflow` is installed as per your systems requirements.
-4) Alternatively, you can run the code directly from the cloned  repository, however you need to run `python setup.py build_ext --inplace` to compile Cython code first.
-5) Optionally, install `pycocotools` if you want to train / test on the MS COCO dataset by running `pip install --user git+https://github.com/cocodataset/cocoapi.git#subdirectory=PythonAPI`.
+If this is an in-person session, hosts will set up VM for you and provide you credentials to Jupyter Lab.  If you're working on this tutorial on your own, please follow installation instructions in [INSTALL.md](INSTALL.md).
 
-## Testing
-An example of testing the network can be seen in [this Notebook](https://github.com/delftrobotics/keras-retinanet/blob/master/examples/ResNet50RetinaNet.ipynb).
-In general, inference of the network works as follows:
+Let's begin!
+
+## Connect to Jupyter Lab
+
+When you open Jupyter Lab in your browser, you will see a screen similar to this:
+
+![image](https://user-images.githubusercontent.com/16640218/54183442-68aa0480-4461-11e9-872e-89e739ab0937.png)
+
+In this lab, we will use the Terminal and File Editor features.
+
+## Explore model files
+
+On the left hand side, you will see a number of Python files: `fashion_mnist.py`, `fashion_mnist_solution.py`, and a few intermediate files `fashion_mnist_after_step_N.py`.
+
+<img src="https://user-images.githubusercontent.com/16640218/54183508-9000d180-4461-11e9-8fdb-995f065aa4b9.png" width="300"></img>
+
+The first file contains the Keras model that does not have any Horovod code, while the second one has all the Horovod features added.  In this tutorial, we will guide you to transform `fashion_mnist.py` into `fashion_mnist_solution.py` step-by-step.  If you get stuck at any point, you can compare your code with the `fashion_mnist_after_step_N.py` file that corresponds to the step you're at.
+
+Why Keras?  We chose Keras due to its simplicity, and the fact that it will be the way to define models in TensorFlow 2.0.
+
+## Run fashion_mnist.py
+
+Before we go into modifications required to scale our WideResNet model, let's run a single-GPU version of the model.
+
+In the Launcher, click the Terminal button:
+
+<img src="https://user-images.githubusercontent.com/16640218/53534695-d135d080-3ab4-11e9-830b-ea5a9e8581d1.png" width="300"></img>
+
+In the terminal, type:
+
+```
+$ cp fashion_mnist.py fashion_mnist_backup.py
+$ python fashion_mnist_backup.py --log-dir baseline
+```
+
+![image](https://user-images.githubusercontent.com/16640218/53534844-5620ea00-3ab5-11e9-9307-332db459da66.png)
+
+After a few minutes, it will train a few epochs:
+
+![image](https://user-images.githubusercontent.com/16640218/54184767-a4929900-4464-11e9-8a6a-e2fed3f4cd00.png)
+
+Open the browser and load `http://<ip-address-of-vm>:6006/`:
+
+![image](https://user-images.githubusercontent.com/16640218/54184664-69906580-4464-11e9-8a8f-3a0b4028b379.png)
+
+You will see training curves in the TensorBoard.  Let it run.  We will get back to the results later.
+
+## Modify fashion_mnist.py
+
+Double-click `fashion_mnist.py` in the file picker, which will open it in the editor:
+
+![image](https://user-images.githubusercontent.com/16640218/53517877-8c924100-3a84-11e9-9a65-a9054529cc6a.png)
+
+Let's dive into the modifications!
+
+### 1. Add Horovod import
+
+Add the following code after `import tensorflow as tf`:
+
 ```python
-boxes, scores, labels = model.predict_on_batch(inputs)
+import horovod.keras as hvd
 ```
 
-Where `boxes` are shaped `(None, None, 4)` (for `(x1, y1, x2, y2)`), scores is shaped `(None, None)` (classification score) and labels is shaped `(None, None)` (label corresponding to the score). In all three outputs, the first dimension represents the shape and the second dimension indexes the list of detections.
+![image](https://user-images.githubusercontent.com/16640218/53517965-c8c5a180-3a84-11e9-9b36-e745bebe84df.png)
+(see line 12)
 
-Loading models can be done in the following manner:
+### 2. Initialize Horovod
+
+Add the following code after `args.checkpoint_format = os.path.join(args.log_dir, 'checkpoint-{epoch}.h5')`:
+
 ```python
-from keras_retinanet.models import load_model
-model = load_model('/path/to/model.h5', backbone_name='resnet50')
+# Horovod: initialize Horovod.
+hvd.init()
 ```
 
-Execution time on NVIDIA Pascal Titan X is roughly 75msec for an image of shape `1000x800x3`.
+![image](https://user-images.githubusercontent.com/16640218/54185178-9d1fbf80-4465-11e9-8617-1f335038a4e0.png)
+(see line 36-37)
 
-### Converting a training model to inference model
-The training procedure of `keras-retinanet` works with *training models*. These are stripped down versions compared to the *inference model* and only contains the layers necessary for training (regression and classification values). If you wish to do inference on a model (perform object detection on an image), you need to convert the trained model to an inference model. This is done as follows:
+### 3. Pin GPU to be used by each process
 
-```shell
-# Running directly from the repository:
-keras_retinanet/bin/convert_model.py /path/to/training/model.h5 /path/to/save/inference/model.h5
+With Horovod, you typically use a single GPU per training process:
 
-# Using the installed script:
-retinanet-convert-model /path/to/training/model.h5 /path/to/save/inference/model.h5
-```
+<img src="https://user-images.githubusercontent.com/16640218/53518255-7d5fc300-3a85-11e9-8bf3-5d0e8913c14f.png" width="400"></img>
 
-Most scripts (like `retinanet-evaluate`) also support converting on the fly, using the `--convert-model` argument.
+This allows you to greatly simplify the model, since it does not have to deal with the manual placement of tensors.  Instead, you just specify which GPU you'd like to use in the beginning of your script.
 
+Add the following code after `hvd.init()`:
 
-## Training
-`keras-retinanet` can be trained using [this](https://github.com/fizyr/keras-retinanet/blob/master/keras_retinanet/bin/train.py) script.
-Note that the train script uses relative imports since it is inside the `keras_retinanet` package.
-If you want to adjust the script for your own use outside of this repository,
-you will need to switch it to use absolute imports.
-
-If you installed `keras-retinanet` correctly, the train script will be installed as `retinanet-train`.
-However, if you make local modifications to the `keras-retinanet` repository, you should run the script directly from the repository.
-That will ensure that your local changes will be used by the train script.
-
-The default backbone is `resnet50`. You can change this using the `--backbone=xxx` argument in the running script.
-`xxx` can be one of the backbones in resnet models (`resnet50`, `resnet101`, `resnet152`), mobilenet models (`mobilenet128_1.0`, `mobilenet128_0.75`, `mobilenet160_1.0`, etc), densenet models or vgg models. The different options are defined by each model in their corresponding python scripts (`resnet.py`, `mobilenet.py`, etc).
-
-Trained models can't be used directly for inference. To convert a trained model to an inference model, check [here](https://github.com/fizyr/keras-retinanet#converting-a-training-model-to-inference-model).
-
-### Usage
-For training on [Pascal VOC](http://host.robots.ox.ac.uk/pascal/VOC/), run:
-```shell
-# Running directly from the repository:
-keras_retinanet/bin/train.py pascal /path/to/VOCdevkit/VOC2007
-
-# Using the installed script:
-retinanet-train pascal /path/to/VOCdevkit/VOC2007
-```
-
-For training on [MS COCO](http://cocodataset.org/#home), run:
-```shell
-# Running directly from the repository:
-keras_retinanet/bin/train.py coco /path/to/MS/COCO
-
-# Using the installed script:
-retinanet-train coco /path/to/MS/COCO
-```
-
-The pretrained MS COCO model can be downloaded [here](https://github.com/fizyr/keras-retinanet/releases). Results using the `cocoapi` are shown below (note: according to the paper, this configuration should achieve a mAP of 0.357).
-
-```
- Average Precision  (AP) @[ IoU=0.50:0.95 | area=   all | maxDets=100 ] = 0.350
- Average Precision  (AP) @[ IoU=0.50      | area=   all | maxDets=100 ] = 0.537
- Average Precision  (AP) @[ IoU=0.75      | area=   all | maxDets=100 ] = 0.374
- Average Precision  (AP) @[ IoU=0.50:0.95 | area= small | maxDets=100 ] = 0.191
- Average Precision  (AP) @[ IoU=0.50:0.95 | area=medium | maxDets=100 ] = 0.383
- Average Precision  (AP) @[ IoU=0.50:0.95 | area= large | maxDets=100 ] = 0.472
- Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets=  1 ] = 0.306
- Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets= 10 ] = 0.491
- Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets=100 ] = 0.533
- Average Recall     (AR) @[ IoU=0.50:0.95 | area= small | maxDets=100 ] = 0.345
- Average Recall     (AR) @[ IoU=0.50:0.95 | area=medium | maxDets=100 ] = 0.577
- Average Recall     (AR) @[ IoU=0.50:0.95 | area= large | maxDets=100 ] = 0.681
-```
-<!--
-For training on Open Images Dataset [OID](https://storage.googleapis.com/openimages/web/index.html)
-or taking place to the [OID challenges](https://storage.googleapis.com/openimages/web/challenge.html), run:
-```shell
-# Running directly from the repository:
-keras_retinanet/bin/train.py oid /path/to/OID
-
-# Using the installed script:
-retinanet-train oid /path/to/OID
-
-# You can also specify a list of labels if you want to train on a subset
-# by adding the argument 'labels_filter':
-keras_retinanet/bin/train.py oid /path/to/OID --labels-filter=Helmet,Tree
-
-# You can also specify a parent label if you want to train on a branch
-# from the semantic hierarchical tree (i.e a parent and all children)
-(https://storage.googleapis.com/openimages/challenge_2018/bbox_labels_500_hierarchy_visualizer/circle.html)
-# by adding the argument 'parent-label':
-keras_retinanet/bin/train.py oid /path/to/OID --parent-label=Boat
-```
--->
-For training on [KITTI](http://www.cvlibs.net/datasets/kitti/eval_object.php), run:
-```shell
-# Running directly from the repository:
-keras_retinanet/bin/train.py kitti /path/to/KITTI
-
-# Using the installed script:
-retinanet-train kitti /path/to/KITTI
-
-If you want to prepare the dataset you can use the following script:
-https://github.com/NVIDIA/DIGITS/blob/master/examples/object-detection/prepare_kitti_data.py
-```
-
-<!--
-For training on a [custom dataset], a CSV file can be used as a way to pass the data.
-See below for more details on the format of these CSV files.
-To train using your CSV, run:
-```shell
-# Running directly from the repository:
-keras_retinanet/bin/train.py csv /path/to/csv/file/containing/annotations /path/to/csv/file/containing/classes
-
-# Using the installed script:
-retinanet-train csv /path/to/csv/file/containing/annotations /path/to/csv/file/containing/classes
-```
-
-In general, the steps to train on your own datasets are:
-1) Create a model by calling for instance `keras_retinanet.models.backbone('resnet50').retinanet(num_classes=80)` and compile it.
-   Empirically, the following compile arguments have been found to work well:
 ```python
-model.compile(
-    loss={
-        'regression'    : keras_retinanet.losses.smooth_l1(),
-        'classification': keras_retinanet.losses.focal()
-    },
-    optimizer=keras.optimizers.adam(lr=1e-5, clipnorm=0.001)
-)
+# Horovod: pin GPU to be used to process local rank (one GPU per process)
+config = tf.ConfigProto()
+config.gpu_options.allow_growth = True
+config.gpu_options.visible_device_list = str(hvd.local_rank())
+K.set_session(tf.Session(config=config))
 ```
 
-2) Create generators for training and testing data (an example is show in [`keras_retinanet.preprocessing.pascal_voc.PascalVocGenerator`](https://github.com/fizyr/keras-retinanet/blob/master/keras_retinanet/preprocessing/pascal_voc.py)).
-3) Use `model.fit_generator` to start training.
+![image](https://user-images.githubusercontent.com/16640218/54185222-b9bbf780-4465-11e9-83de-4c587db327ae.png)
+(see line 39-43)
 
-## CSV datasets
-The `CSVGenerator` provides an easy way to define your own datasets.
-It uses two CSV files: one file containing annotations and one file containing a class name to ID mapping.
+### 4. Broadcast the starting epoch from the first worker to everyone else
 
-### Annotations format
-The CSV file with annotations should contain one annotation per line.
-Images with multiple bounding boxes should use one row per bounding box.
-Note that indexing for pixel values starts at 0.
-The expected format of each line is:
-```
-path/to/image.jpg,x1,y1,x2,y2,class_name
-```
+In `fashion_mnist.py`, we're using the filename of the last checkpoint to determine the epoch to resume training from in case of a failure:
 
-Some images may not contain any labeled objects.
-To add these images to the dataset as negative examples,
-add an annotation where `x1`, `y1`, `x2`, `y2` and `class_name` are all empty:
-```
-path/to/image.jpg,,,,,
+![image](https://user-images.githubusercontent.com/16640218/54185268-d35d3f00-4465-11e9-99eb-96d4b99f1d38.png)
+
+As you scale your workload to multi-node, some of your workers may not have access to the filesystem containing the checkpoint.  For that reason, we make the first worker to determine the epoch to restart from, and *broadcast* that information to the rest of the workers.
+
+To broadcast the starting epoch from the first worker, add the following code:
+
+```python
+# Horovod: broadcast resume_from_epoch from rank 0 (which will have
+# checkpoints) to other ranks.
+resume_from_epoch = hvd.broadcast(resume_from_epoch, 0, name='resume_from_epoch')
 ```
 
-A full example:
-```
-/data/imgs/img_001.jpg,837,346,981,456,cow
-/data/imgs/img_002.jpg,215,312,279,391,cat
-/data/imgs/img_002.jpg,22,5,89,84,bird
-/data/imgs/img_003.jpg,,,,,
-```
+![image](https://user-images.githubusercontent.com/16640218/53534072-2de3bc00-3ab2-11e9-8cf1-7531542e3202.png)
+(see line 52-54)
 
-This defines a dataset with 3 images.
-`img_001.jpg` contains a cow.
-`img_002.jpg` contains a cat and a bird.
-`img_003.jpg` contains no interesting objects/animals.
+### 5. Print verbose logs only on the first worker
 
+Horovod uses MPI to run model training workers.  By default, MPI aggregates output from all workers.  To reduce clutter, we recommended that you write logs only on the first worker.
 
-### Class mapping format
-The class name to ID mapping file should contain one mapping per line.
-Each line should use the following format:
-```
-class_name,id
+Replace `verbose = 1` with the following code:
+
+```python
+# Horovod: print logs on the first worker.
+verbose = 1 if hvd.rank() == 0 else 0
 ```
 
-Indexing for classes starts at 0.
-Do not include a background class as it is implicit.
+![image](https://user-images.githubusercontent.com/16640218/53534314-2244c500-3ab3-11e9-95ef-e7e7b282ab4f.png)
+(see line 56-57)
 
-For example:
+### 6. Read checkpoint only on the first worker
+
+For the same reason as above, we read the checkpoint only on the first worker and *broadcast* the initial state to other workers.
+
+Replace the following code:
+
+```python
+# Restore from a previous checkpoint, if initial_epoch is specified.
+if resume_from_epoch > 0:
+    model = keras.models.load_model(args.checkpoint_format.format(epoch=resume_from_epoch))
+else:
+    ...
 ```
-cow,0
-cat,1
-bird,2
+
+with:
+
+```python
+# Restore from a previous checkpoint, if initial_epoch is specified.
+# Horovod: restore on the first worker which will broadcast both model and optimizer weights
+# to other workers.
+if resume_from_epoch > 0 and hvd.rank() == 0:
+    model = hvd.load_model(args.checkpoint_format.format(epoch=resume_from_epoch))
+else:
+    ...
 ```
--->
-## Debugging
-Creating your own dataset does not always work out of the box. There is a [`debug.py`](https://github.com/fizyr/keras-retinanet/blob/master/keras_retinanet/bin/debug.py) tool to help find the most common mistakes.
 
-Particularly helpful is the `--annotations` flag which displays your annotations on the images from your dataset. Annotations are colored in green when there are anchors available and colored in red when there are no anchors available. If an annotation doesn't have anchors available, it means it won't contribute to training. It is normal for a small amount of annotations to show up in red, but if most or all annotations are red there is cause for concern. The most common issues are that the annotations are too small or too oddly shaped (stretched out).
+![image](https://user-images.githubusercontent.com/16640218/53534410-9717ff00-3ab3-11e9-86eb-1bf8299416d2.png)
+(see line 91-96)
 
-## Results
+### 7. Adjust learning rate and add Distributed Optimizer
 
-### MS COCO
+Horovod uses an operation that averages gradients across workers.  Gradient averaging typically requires a corresponding increase in learning rate to make bigger steps in the direction of a higher-quality gradient.
 
-## Status
-Example output images using `keras-retinanet` are shown below.
+Replace `opt = keras.optimizers.SGD(lr=args.base_lr, momentum=args.momentum)` with:
 
-<p align="center">
-  <img src="https://github.com/delftrobotics/keras-retinanet/blob/master/images/coco1.png" alt="Example result of RetinaNet on MS COCO"/>
-  <img src="https://github.com/delftrobotics/keras-retinanet/blob/master/images/coco2.png" alt="Example result of RetinaNet on MS COCO"/>
-  <img src="https://github.com/delftrobotics/keras-retinanet/blob/master/images/coco3.png" alt="Example result of RetinaNet on MS COCO"/>
-</p>
+```python
+# Horovod: adjust learning rate based on number of GPUs.
+opt = keras.optimizers.SGD(lr=args.base_lr * hvd.size(),
+                           momentum=args.momentum)
 
-### Projects using keras-retinanet
-* [NudeNet](https://github.com/bedapudi6788/NudeNet). Project that focuses on detecting and censoring of nudity.
-* [Individual tree-crown detection in RGB imagery using self-supervised deep learning neural networks](https://www.biorxiv.org/content/10.1101/532952v1). Research project focused on improving the performance of remotely sensed tree surveys.
-* [ESRI Object Detection Challenge 2019](https://github.com/kunwar31/ESRI_Object_Detection). Winning implementation of the ESRI Object Detection Challenge 2019.
-* [Lunar Rockfall Detector Project](https://ieeexplore.ieee.org/document/8587120). The aim of this project is to map lunar rockfalls on a global scale using the available > 1.6 million satellite images.
-* [NATO Innovation Challenge](https://medium.com/data-from-the-trenches/object-detection-with-deep-learning-on-aerial-imagery-2465078db8a9). The winning team of the NATO Innovation Challenge used keras-retinanet to detect cars in aerial images ([COWC dataset](https://gdo152.llnl.gov/cowc/)).
-* [Microsoft Research for Horovod on Azure](https://blogs.technet.microsoft.com/machinelearning/2018/06/20/how-to-do-distributed-deep-learning-for-object-detection-using-horovod-on-azure/). A research project by Microsoft, using keras-retinanet to distribute training over multiple GPUs using Horovod on Azure.
-* [Anno-Mage](https://virajmavani.github.io/saiat/). A tool that helps you annotate images, using input from the keras-retinanet COCO model as suggestions.
-* [Telenav.AI](https://github.com/Telenav/Telenav.AI/tree/master/retinanet). For the detection of traffic signs using keras-retinanet.
-* [Towards Deep Placental Histology Phenotyping](https://github.com/Nellaker-group/TowardsDeepPhenotyping). This research project uses keras-retinanet for analysing the placenta at a cellular level.
-* [4k video example](https://www.youtube.com/watch?v=KYueHEMGRos). This demo shows the use of keras-retinanet on a 4k input video.
-* [boring-detector](https://github.com/lexfridman/boring-detector). I suppose not all projects need to solve life's biggest questions. This project detects the "The Boring Company" hats in videos.
-* [comet.ml](https://towardsdatascience.com/how-i-monitor-and-track-my-machine-learning-experiments-from-anywhere-described-in-13-tweets-ec3d0870af99). Using keras-retinanet in combination with [comet.ml](https://comet.ml) to interactively inspect and compare experiments.
+# Horovod: add Horovod Distributed Optimizer.
+opt = hvd.DistributedOptimizer(opt)
+```
 
-If you have a project based on `keras-retinanet` and would like to have it published here, shoot me a message on Slack.
+![image](https://user-images.githubusercontent.com/16640218/53534579-52409800-3ab4-11e9-971e-f7def73c7b36.png)
+(see line 116-121)
 
-### Notes
-* This repository requires Keras 2.2.4 or higher.
-* This repository is [tested](https://github.com/fizyr/keras-retinanet/blob/master/.travis.yml) using OpenCV 3.4.
-* This repository is [tested](https://github.com/fizyr/keras-retinanet/blob/master/.travis.yml) using Python 2.7 and 3.6.
+### 8. Add BroadcastGlobalVariablesCallback
 
-Contributions to this project are welcome.
+In the previous section, we mentioned that the first worker would broadcast parameters to the rest of the workers.  We will use `horovod.keras.BroadcastGlobalVariablesCallback` to make this happen.
 
-### Discussions
-Feel free to join the `#keras-retinanet` [Keras Slack](https://keras-slack-autojoin.herokuapp.com/) channel for discussions and questions.
+Add `BroadcastGlobalVariablesCallback` as the first element of the `callbacks` list:
 
-## FAQ
-* **I get the warning `UserWarning: No training configuration found in save file: the model was not compiled. Compile it manually.`, should I be worried?** This warning can safely be ignored during inference.
-* **I get the error `ValueError: not enough values to unpack (expected 3, got 2)` during inference, what to do?**. This is because you are using a train model to do inference. See https://github.com/fizyr/keras-retinanet#converting-a-training-model-to-inference-model for more information.
-* **How do I do transfer learning?** The easiest solution is to use the `--weights` argument when training. Keras will load models, even if the number of classes don't match (it will simply skip loading of weights when there is a mismatch). Run for example `retinanet-train --weights snapshots/some_coco_model.h5 pascal /path/to/pascal` to transfer weights from a COCO model to a PascalVOC training session. If your dataset is small, you can also use the `--freeze-backbone` argument to freeze the backbone layers.
-* **How do I change the number / shape of the anchors?** The train tool allows to pass a configuration file, where the anchor parameters can be adjusted. Check [here](https://github.com/fizyr/keras-retinanet-test-data/blob/master/config/config.ini) for an example config file.
-* **I get a loss of `0`, what is going on?** This mostly happens when none of the anchors "fit" on your objects, because they are most likely too small or elongated. You can verify this using the [debug](https://github.com/fizyr/keras-retinanet#debugging) tool.
-* **I have an older model, can I use it after an update of keras-retinanet?** This depends on what has changed. If it is a change that doesn't affect the weights then you can "update" models by creating a new retinanet model, loading your old weights using `model.load_weights(weights_path, by_name=True)` and saving this model. If the change has been too significant, you should retrain your model (you can try to load in the weights from your old model when starting training, this might be a better starting position than ImageNet).
-* **I get the error `ModuleNotFoundError: No module named 'keras_retinanet.utils.compute_overlap'`, how do I fix this?** Most likely you are running the code from the cloned repository. This is fine, but you need to compile some extensions for this to work (`python setup.py build_ext --inplace`).
-* **How do I train on my own dataset?** The steps to train on your dataset are roughly as follows:
-* 1. Prepare your dataset in the CSV format (a training and validation split is advised).
-* 2. Check that your dataset is correct using `retinanet-debug`.
-* 3. Train retinanet, preferably using the pretrained COCO weights (this gives a **far** better starting point, making training much quicker and accurate). You can optionally perform evaluation of your validation set during training to keep track of how well it performs (advised).
-* 4. Convert your training model to an inference model.
-* 5. Evaluate your inference model on your test or validation set.
-* 6. Profit!
+```python
+callbacks = [
+    # Horovod: broadcast initial variable states from rank 0 to all other processes.
+    # This is necessary to ensure consistent initialization of all workers when
+    # training is started with random weights or restored from a checkpoint.
+    hvd.callbacks.BroadcastGlobalVariablesCallback(0),
+
+    ...
+```
+
+![image](https://user-images.githubusercontent.com/16640218/53535043-1dcddb80-3ab6-11e9-9911-1eb33a1f531c.png)
+(see line 139-142)
+
+### 9. Add learning rate warmup
+
+Many models are sensitive to using a large learning rate (LR) immediately after initialization and can benefit from learning rate warmup.  The idea is to start training with lower LR and gradually raise it to a target LR over a few epochs.  Horovod has the convenient `LearningRateWarmupCallback` for the Keras API that implements that logic.
+
+Since we're already using `LearningRateScheduler` in this code, and it modifies learning rate along with `LearningRateWarmupCallback`, there is a possibility of a conflict.  In order to avoid such conflict, we will swap out `LearningRateScheduler` with Horovod `LearningRateScheduleCallback`.
+
+Replace the following code:
+
+```python
+def lr_schedule(epoch):
+    if epoch < 15:
+        return args.base_lr
+    if epoch < 25:
+        return 1e-1 * args.base_lr
+    if epoch < 35:
+        return 1e-2 * args.base_lr
+    return 1e-3 * args.base_lr
+
+
+callbacks = [
+    ...
+    
+    keras.callbacks.LearningRateScheduler(lr_schedule),
+    ...
+```
+
+with:
+
+```python
+callbacks = [
+    ...
+
+    # Horovod: using `lr = 1.0 * hvd.size()` from the very beginning leads to worse final
+    # accuracy. Scale the learning rate `lr = 1.0` ---> `lr = 1.0 * hvd.size()` during
+    # the first five epochs. See https://arxiv.org/abs/1706.02677 for details.
+    hvd.callbacks.LearningRateWarmupCallback(warmup_epochs=args.warmup_epochs, verbose=verbose),
+
+    # Horovod: after the warmup reduce learning rate by 10 on the 15th, 25th and 35th epochs.
+    hvd.callbacks.LearningRateScheduleCallback(start_epoch=args.warmup_epochs, end_epoch=15, multiplier=1.),
+    hvd.callbacks.LearningRateScheduleCallback(start_epoch=15, end_epoch=25, multiplier=1e-1),
+    hvd.callbacks.LearningRateScheduleCallback(start_epoch=25, end_epoch=35, multiplier=1e-2),
+    hvd.callbacks.LearningRateScheduleCallback(start_epoch=35, multiplier=1e-3),
+
+    ...
+```
+
+![image](https://user-images.githubusercontent.com/16640218/53535420-98e3c180-3ab7-11e9-8780-9258081f66c5.png)
+(see line 133-142)
+
+Since we've added a new `args.warmup_epochs` argument, we should register it:
+
+```python
+parser.add_argument('--warmup-epochs', type=float, default=5,
+                    help='number of warmup epochs')
+```
+
+![image](https://user-images.githubusercontent.com/16640218/54185817-284d8500-4467-11e9-9f7d-c6adc5b12cbf.png)
+(see line 26-27)
+
+### 10. Save checkpoints & logs only of the first worker
+
+We don't want multiple workers to be overwriting same checkpoint files, since it could lead to corruption.
+
+Replace the following:
+
+```python
+callbacks = [
+    ...
+
+    keras.callbacks.ModelCheckpoint(args.checkpoint_format),
+    keras.callbacks.TensorBoard(args.log_dir)
+]
+```
+
+with:
+
+```python
+callbacks = [
+    ...
+]
+
+# Horovod: save checkpoints only on the first worker to prevent other workers from corrupting them.
+if hvd.rank() == 0:
+    callbacks.append(keras.callbacks.ModelCheckpoint(args.checkpoint_format))
+    callbacks.append(keras.callbacks.TensorBoard(args.log_dir))
+```
+
+![image](https://user-images.githubusercontent.com/16640218/53535616-4e167980-3ab8-11e9-82d9-82e431dfd621.png)
+(see line 145-148)
+
+### 11. Modify training loop to execute fewer steps per epoch
+
+To speed up training, we will execute fewer steps of distributed training.  To keep the total number of examples processed during the training the same, we will do `num_steps / N` steps, where `num_steps` is the original number of steps, and `N` is the total number of workers.
+
+We will also speed up validation by validating `3 * num_validation_steps / N` steps on each worker.  The multiplier **3** provides over-sampling of validation data helps to increase probability that every validation example will be evaluated.
+
+Replace `model.fit_generator(...)` with:
+
+```python
+# Train the model. The training will randomly sample 1 / N batches of training data and
+# 3 / N batches of validation data on every worker, where N is the number of workers.
+# Over-sampling of validation data, which helps to increase the probability that every
+# validation example will be evaluated.
+model.fit_generator(train_iter,
+                    steps_per_epoch=len(train_iter) // hvd.size(),
+                    callbacks=callbacks,
+                    epochs=args.epochs,
+                    verbose=verbose,
+                    workers=4,
+                    initial_epoch=resume_from_epoch,
+                    validation_data=test_iter,
+                    validation_steps=3 * len(test_iter) // hvd.size())
+```
+
+![image](https://user-images.githubusercontent.com/16640218/53536410-283ea400-3abb-11e9-8742-05921b0795de.png)
+(see line 152-164)
+
+### 12. Average validation results among workers
+
+Since we're not validating full dataset on each worker anymore, each worker will have different validation results.  To improve validation metric quality and reduce variance, we will average validation results among all workers.
+
+To do so, inject `MetricAverageCallback` after `BroadcastGlobalVariablesCallback`:
+
+```python
+callbacks = [
+    ...
+
+    # Horovod: average metrics among workers at the end of every epoch.
+    #
+    # Note: This callback must be in the list before the ReduceLROnPlateau,
+    # TensorBoard, or other metrics-based callbacks.
+    hvd.callbacks.MetricAverageCallback(),
+    
+    ...
+```
+
+![image](https://user-images.githubusercontent.com/16640218/53536553-b2870800-3abb-11e9-88f9-1a2758bd25dd.png)
+(see line 135-139)
+
+## Check your work
+
+Congratulations!  If you made it this far, your `fashion_mnist.py` should now be fully distributed.  To verify, you can run the following command in the terminal, which should produce no output:
+
+```
+$ diff fashion_mnist.py fashion_mnist_solution.py
+$
+```
+
+![image](https://user-images.githubusercontent.com/16640218/53536688-23c6bb00-3abc-11e9-9413-1c4ad179653a.png)
+
+## Run distributed fashion_mnist.py
+
+It's time to run your distributed `fashion_mnist.py`.  First, let's check if the single-GPU version completed.  Open the terminal, and verify that it did complete, and interrupt it using Ctrl-C if it did not.
+
+![image](https://user-images.githubusercontent.com/16640218/53536718-448f1080-3abc-11e9-9e22-021dc3ba5de9.png)
+
+Now, run distributed `fashion_mnist.py` using:
+
+```
+$ horovodrun -np 4 python fashion_mnist.py --log-dir distributed
+```
+
+![image](https://user-images.githubusercontent.com/16640218/53536888-da2aa000-3abc-11e9-9083-43060634433c.png)
+
+After a few minutes, you should see training progress.  It will be faster compared to the single-GPU model:
+
+![image](https://user-images.githubusercontent.com/16640218/53536956-270e7680-3abd-11e9-8f3b-acbe9bbfd085.png)
+
+## Monitor training progress
+
+Open the browser and load `http://<ip-address-of-vm>:6006/`:
+
+![image](https://user-images.githubusercontent.com/16640218/54213792-3ec50200-44a2-11e9-9c7d-fdf9ab1bf94f.png)
+
+By default, TensorBoard shows metric comparison based on the number of epochs.  This is shown on the chart above.  To compare training time it takes to achieve a certain accuracy, select **RELATIVE** in the *Horizontal Axis* selector:
+
+![image](https://user-images.githubusercontent.com/16640218/54213965-94011380-44a2-11e9-9420-138bfe529ec6.png)
+
+### Note
+
+1. Since deep learning training is a stochastic process, you will see variation between accuracy of single-GPU and distributed training runs.  These are normal.
+
+2. You will see approximately **3x** speedup in wall clock time, but not **4x** speedup.  This is expected for this model, since the model is very small and communication overhead plays large role in the training.  As you start training bigger models that take hours, days, or weeks to train, you will generally see better scaling efficiency.
+
+## Parting thoughts
+
+Thanks for following this tutorial!  We're excited to see you apply Horovod to speed up training of your models.
