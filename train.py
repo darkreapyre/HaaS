@@ -1,4 +1,4 @@
-from __future__ import print_function
+#!/usr/bin/env python
 
 import argparse
 import keras
@@ -6,6 +6,8 @@ from keras import backend as K
 from keras.preprocessing import image
 from keras.datasets import fashion_mnist
 from keras_contrib.applications.wide_resnet import WideResidualNetwork
+import mlflow
+import mlflow.keras
 import numpy as np
 import tensorflow as tf
 import horovod.keras as hvd
@@ -45,7 +47,7 @@ parser.add_argument('--dataset', help='Training dataset Name.',
 args = parser.parse_args()
 
 # Checkpoints will be written in the log directory.
-args.checkpoint_format = os.path.join(args.log_dir, 'checkpoint-{epoch}.h5')
+args.checkpoint_format = os.path.join(args.output_path, 'checkpoint-{epoch}.h5')
 
 # Horovod: initialize Horovod.
 hvd.init()
@@ -166,7 +168,7 @@ callbacks = [
 # Horovod: save checkpoints only on the first worker to prevent other workers from corrupting them.
 if hvd.rank() == 0:
     callbacks.append(keras.callbacks.ModelCheckpoint(args.checkpoint_format))
-    callbacks.append(keras.callbacks.TensorBoard(args.log_dir))
+    callbacks.append(keras.callbacks.TensorBoard(args.output_path))
 
 # Train the model. The training will randomly sample 1 / N batches of training data and
 # 3 / N batches of validation data on every worker, where N is the number of workers.
@@ -177,13 +179,21 @@ model.fit_generator(train_iter,
                     callbacks=callbacks,
                     epochs=args.epochs,
                     verbose=verbose,
-#                    workers=4,
+                    workers=4,
                     initial_epoch=resume_from_epoch,
                     validation_data=test_iter,
                     validation_steps=3 * len(test_iter) // hvd.size())
 
 # Evaluate the model on the full data set.
-score = model.evaluate_generator(test_iter, len(test_iter))#, workers=4)
+score = model.evaluate_generator(test_iter, len(test_iter), workers=4)
 if verbose:
     print('Test loss:', score[0])
     print('Test accuracy:', score[1])
+
+if hvd.rank() == 0:
+    mlflow.tracking.set_tracking_uri(args.tracking_uri)
+    experiment_id = mlflow.create_experiment(args.experiment_name)
+    with mlflow.start_run(experiment_id=experiment_id) as run:
+        mlflow.log_metric('loss', score[0])
+        mlflow.log_metric('accuracy', score[1])
+        mlflow.log_artifacts(args.output_path, 'output')
