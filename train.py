@@ -30,6 +30,18 @@ parser.add_argument('--momentum', type=float, default=0.9,
 parser.add_argument('--wd', type=float, default=0.000005,
                     help='weight decay')
 
+# Added MMP/HaaS specific arguments
+parser.add_argument('--dataset-path', help='Path to the training dataset.',
+                    dest='dataset_path', type=str)
+parser.add_argument('--output-path', help='Path to the trained model output.',
+                    dest='output_path', type=str)
+parser.add_argument('--tracking-uri', help='MlFlow Tracking API URL.',
+                    dest='tracking_uri', type=str)
+parser.add_argument('--experiment-name', help='MlFlow Experiment Name.',
+                    dest='experiment_name', type=str)
+parser.add_argument('--dataset', help='Training dataset Name.',
+                    dest='dataset_type')
+
 args = parser.parse_args()
 
 # Checkpoints will be written in the log directory.
@@ -165,13 +177,13 @@ model.fit_generator(train_iter,
                     callbacks=callbacks,
                     epochs=args.epochs,
                     verbose=verbose,
-                    workers=4,
+#                    workers=4,
                     initial_epoch=resume_from_epoch,
                     validation_data=test_iter,
                     validation_steps=3 * len(test_iter) // hvd.size())
 
 # Evaluate the model on the full data set.
-score = model.evaluate_generator(test_iter, len(test_iter), workers=4)
+score = model.evaluate_generator(test_iter, len(test_iter))#, workers=4)
 if verbose:
     print('Test loss:', score[0])
     print('Test accuracy:', score[1])
