@@ -1,0 +1,14 @@
+{% extends "bootstrap/base.html" %}
+{% import "bootstrap/wtf.html" as wtf %}
+{% block content %}
+  <div class="container">
+  <h3>Enter the Machine Learning Experiment Configuration:</h3>
+<hr>
+{{ wtf.quick_form(form) }}
+<hr>
+
+<footer>
+  <p>&copy; 2019, Amazon Web Services, Inc. or its affiliates. All roghts reserved.</p>
+</footer>
+</div>
+{% endblock %}
