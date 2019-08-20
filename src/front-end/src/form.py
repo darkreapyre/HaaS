@@ -3,7 +3,7 @@ from wtforms import IntegerField, StringField, SubmitField, SelectField
 from wtforms.validators import InputRequired
 
 # Form ORM
-class SMForm(FlaskForm):
+class Form(FlaskForm):
 	Model_Name = StringField('Enter the Machine Learning Model Name.', validators=[InputRequired()])
 	Version = IntegerField('Enter the Experiment Version Number.', validators=[InputRequired()])
 	Dataset_Name = SelectField(
@@ -17,7 +17,16 @@ class SMForm(FlaskForm):
 		]
 	)
 	Github_Repo = StringField('Enter the Name of the Training Source Code Repository.', validators=[InputRequired()])
-	Github_User = StringField('Enter the User Name for the Training Source Code Repository', validators=[InputRequired()])
+	Github_User = StringField('Enter the User Name for the Training Source Code Repository.', validators=[InputRequired()])
+	Platform = SelectField(
+		'Choose the Training Cluster Platform.',
+		validators=[InputRequired()],
+		choices=[
+			('sagemaker', 'Amazon SageMaker')
+			# ('eks', 'Amazon EKS'),
+			# ('dlami', 'Amazon Deep Learning AMI')
+		]
+	)
 	Training_Instance = SelectField(
 		'Choose a Training Instance type.',
 		validators=[InputRequired()],

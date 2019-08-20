@@ -3,9 +3,7 @@ import boto3, json
 from datetime import datetime
 from flask import Flask, render_template, request
 from flask_bootstrap import Bootstrap
-from sm_form import SMForm
-from eks_form import EKSForm
-from ami_form import AMIForm
+from form import Form
 from random import choice
 import os
 
@@ -22,11 +20,11 @@ Bootstrap(app)
 def index():
     return render_template('index.html', dashboard=os.environ['DASHBOARD_URL'])
 
-@app.route('/smcreate', methods=['GET', 'POST'])
-def create_sm_experiment():
-    form = SMForm(request.form)
+@app.route('/create', methods=['GET', 'POST'])
+def create_experiment():
+    form = Form(request.form)
     if not form.validate_on_submit():
-        return render_template('create_sm_experiment.html', form=form)
+        return render_template('create_experiment.html', form=form)
     if request.method == 'POST':
         S3_BUCKET_NAME = os.environ['S3_BUCKET']
         print(S3_BUCKET_NAME) # Debug
@@ -38,7 +36,7 @@ def create_sm_experiment():
         experiment['Model_Name'] = request.form.get('Model_Name')
         experiment['Version'] = request.form.get('Version')
         experiment['Description'] = 'Experiment created on {} at {}.'.format(date, time)
-        experiment['Platform'] = 'sagemaker'
+        experiment['Platform'] = request.form.get('Platform')
         experiment['Dataset_Name'] = request.form.get('Dataset_Name')
         experiment['GitHub_User'] = request.form.get('Github_User')
         experiment['GitHub_Repo'] = request.form.get('Github_Repo')
