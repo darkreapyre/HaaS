@@ -3,9 +3,6 @@ import boto3
 import os
 import json
 
-# Global variables
-#PROJECT_NAME = os.environ['CODEBUILD_PROJECT']
-
 def build_var(config):
     variables = []
     for k, v in config.items():
@@ -34,11 +31,9 @@ def lambda_handler(event, context):
     variables = build_var(config)
 
     # Start the Build Job
-#    job_name = str(PROJECT_NAME)
     job_name = event['preprocess_job_name']
     print('starting {} data pre-processing job ...'.format(job_name))
     start_build(job_name, variables)
-#    event['job_name'] = job_name
     event['stage'] = 'PreProcess'
     event['status'] = 'InProgress' #change status message to conform to SageMaker message output
     event['message'] = 'Started Pre-Processing Data job "{}"'.format(job_name)
