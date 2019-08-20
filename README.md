@@ -22,7 +22,7 @@ The following list of requirements need to be implemented in the model training 
     import horovod
     ```
 4. The `train.py` file **must** leverage Python `argparse()` functionality and must include the following mandatory parameters:
-    - `--output-path`: This will automatically point to the "local" path where any model training checkpoints (i.e. if using `keras.callbacks.ModelCheckpoint()`) are stored. If Sagemaker is leveraged as the training platform, this path will automatically point to the SageMaker output path and will store the fully strained (or check-pointed model) to Amazon S3.
+    - `--output-path`: This will automatically point to the "local" path where any model training checkpoints (i.e. if using `keras.callbacks.ModelCheckpoint()`) are stored. If SageMaker is leveraged as the training platform, this path will automatically point to the SageMaker output path and will store the fully strained (or check-pointed model) to Amazon S3.
     - `--dataset-path`: If using SageMaker as the training platform, this will automatically point to the local copy of the training/validation datasets copied from S3 during training instance deployment. Alternatively, if either the Deep Learning AMI or Kubernetes are used as the training platform, this will point to the FSx mount point.
     - `--dataset`: This is the name of the training/validation dataset that is populated from the experiment configuration's list of supported datasets.
     - `--experiment-name`: This is the name of the experiment from the experiment configuration and is used to update the active run parameters of the experiment platform.
@@ -36,7 +36,7 @@ The following list of requirements need to be implemented in the model training 
         parser.add_argument('--experiment-name', help='MlFlow Experiment Name.', dest='experiment_name', type=str)
         parser.add_argument('--dataset', help='Training dataset Name.', dest='dataset_type')
         ```
-5. All command line parameters Hyperparameters, that will be executed by the `train.py` script must be configured in the `experiment_config.json` configuration file as a **JSON string** for example:
+5. All command line parameters Hyper-parameters, that will be executed by the `train.py` script must be configured in the `experiment_config.json` configuration file as a **JSON string** for example:
     ```json
     "Hyperparameters": "{'epochs': '50', 'batch_size': '1', 'steps': '10000', 'backbone': 'resnet50'}"
     ```
@@ -70,7 +70,7 @@ The following is a list of requirements that need to be implemented within he mo
         mlflow.log_metric('accuracy', score[1])
         mlflow.log_artifacts(args.output_path, 'output')
     ```
->__Note:__ For futher eamples of how to confogure these parasmeters, please see the GitHub repos [here](https://github.com/darkreapyre/HaaS-dev/blob/master/train.py) and [here](https://github.com/darkreapyre/keras-retinanet/blob/master/train.py).
+>__Note:__ For further examples of how to configure these parameters, please see the GitHub repos [here](https://github.com/darkreapyre/HaaS-dev/blob/master/train.py) and [here](https://github.com/darkreapyre/keras-retinanet/blob/master/train.py).
 
 ## Deployment
 
@@ -105,7 +105,7 @@ The following is a list of requirements that need to be implemented within he mo
     5. __Repository User Name:__ Enter the name of the GitHub user name that has the model source code repository.
     6. __Training Instance Type:__ Using the drop-down list, select the type of CPU or GPU training instance required to run the experiment.
     7. __Training Instance Count:__ Enter the number of CPU or GPU instances to be used to run the experiment.
-    8. __Training Hyperparameters:__ Enter the experiment specific Hyperparameters in the form of a JSON string.
+    8. __Training Hyper-parameters:__ Enter the experiment specific Hyper-parameters in the form of a JSON string.
     9. Submit the experiment for training by clicking on the **Submit** button.  
 ![Experiment_Config](./assets/experiment_config.png)
 4. Once the experiment is complete, click on the **Experiment Dashboard** button to open the MlFlow experiment tracking dashboard:
