@@ -6,6 +6,7 @@ ENV CUDNN_VERSION=7.1.4.18-1+cuda9.0
 ENV NCCL_VERSION=2.2.13-1+cuda9.0
 ENV MXNET_VERSION=1.5.0
 ENV HOROVOD_VERSION=0.17.0
+ENV KERAS_VERSION=2.2.4
  
 RUN apt-get update && apt-get install -y --no-install-recommends --allow-downgrades --allow-change-held-packages \ 
       build-essential \ 
@@ -52,7 +53,7 @@ RUN mkdir /tmp/openmpi && \
  
  
 # Install TensorFlow and Keras 
-RUN pip3 install tensorflow-gpu==${TENSORFLOW_VERSION} keras h5py torch==${PYTORCH_VERSION} torchvision==${TORCHVISION_VERSION} mxnet-cu90==${MXNET_VERSION}
+RUN pip3 install tensorflow-gpu==${TENSORFLOW_VERSION} keras==${KERAS_VERSION} h5py torch==${PYTORCH_VERSION} torchvision==${TORCHVISION_VERSION} mxnet-cu90==${MXNET_VERSION}
  
 # Install Horovod, temporarily using CUDA stubs 
 RUN ldconfig /usr/local/cuda-9.0/targets/x86_64-linux/lib/stubs && \ 
