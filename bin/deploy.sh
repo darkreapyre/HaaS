@@ -8,7 +8,7 @@ echo -n "Enter the e-mail address for Pipeline Approval > "
 read email
 DATE=$(date '+%m-%d-%Y')
 TIME=$(date '+%H-%M')
-bootstrap_bucket="${stackname}-bootstrap-${region}"
+bootstrap_bucket="${stackname}-bootstrap-${DATE}-${TIME}"
 
 echo ""
 echo -n "Creating Bootstrap S3 Bucket ..."
@@ -83,7 +83,6 @@ echo ""
 echo -n "Deploying CloudFormation Stack ..."
 echo ""
 aws cloudformation deploy --stack-name $stackname --template-file ./template.yaml --capabilities CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND --parameter-overrides EmailAddress=$email S3BootstrapBucket=$bootstrap_bucket --region $region
-
 dashboard_url=$(aws cloudformation describe-stacks --stack-name $stackname --query "Stacks[0].Outputs[?OutputKey=='MlFlowURL'].OutputValue" --output text --region $region)
 cat > ./staging/experiment_config.json <<EOF
 {

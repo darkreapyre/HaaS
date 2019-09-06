@@ -5,7 +5,7 @@ ENV TORCHVISION_VERSION=0.4.0
 ENV CUDNN_VERSION=7.1.4.18-1+cuda9.0 
 ENV NCCL_VERSION=2.2.13-1+cuda9.0
 ENV MXNET_VERSION=1.5.0
-#ENV HOROVOD_VERSION=0.16.4
+ENV HOROVOD_VERSION=0.16.4
 ENV KERAS_VERSION=2.2.4
  
 RUN apt-get update && apt-get install -y --no-install-recommends --allow-downgrades --allow-change-held-packages \ 

@@ -9,6 +9,7 @@ The MMP solution allows you to create Machine Learning Experiments by leveraging
 ### General Requirements
 1. AWS Account.
 2. Necessary Limits for GPU/CPU training instances in the appropriate AWS Region.
+3. AWS CLI installed and configured.
 
 >__Note:__ This solution has only been tested in the *us-west-2* AWS Region.
 
@@ -70,7 +71,7 @@ The following is a list of requirements that need to be implemented within he mo
         mlflow.log_metric('accuracy', score[1])
         mlflow.log_artifacts(args.output_path, 'output')
     ```
->__Note:__ For further examples of how to configure these parameters, please see the GitHub repos [here](https://github.com/darkreapyre/HaaS-dev/blob/master/train.py) and [here](https://github.com/darkreapyre/keras-retinanet/blob/master/train.py).
+>__Note:__ For further examples of how to configure these parameters, please see the GitHub repos [here](https://github.com/darkreapyre/keras-retinanet/blob/master/train.py).
 
 ## Deployment
 
