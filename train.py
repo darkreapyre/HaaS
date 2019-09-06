@@ -200,13 +200,13 @@ model.fit_generator(train_iter,
                     callbacks=callbacks,
                     epochs=args.epochs,
                     verbose=verbose,
-                    workers=4,
+                    workers=1,
                     initial_epoch=resume_from_epoch,
                     validation_data=test_iter,
                     validation_steps=3 * len(test_iter) // hvd.size())
 
 # Evaluate the model on the full data set.
-score = model.evaluate_generator(test_iter, len(test_iter), workers=4)
+score = model.evaluate_generator(test_iter, len(test_iter), workers=1)
 if verbose:
     print('Test loss:', score[0])
     print('Test accuracy:', score[1])
