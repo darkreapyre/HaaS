@@ -18,15 +18,6 @@ class Form(FlaskForm):
 	)
 	Github_Repo = StringField('Enter the Name of the Training Source Code Repository.', validators=[InputRequired()])
 	Github_User = StringField('Enter the User Name for the Training Source Code Repository.', validators=[InputRequired()])
-	Platform = SelectField(
-		'Choose the Training Cluster Platform.',
-		validators=[InputRequired()],
-		choices=[
-			('sagemaker', 'Amazon SageMaker')
-			# ('eks', 'Amazon EKS'),
-			# ('dlami', 'Amazon Deep Learning AMI')
-		]
-	)
 	Training_Instance = SelectField(
 		'Choose a Training Instance type.',
 		validators=[InputRequired()],

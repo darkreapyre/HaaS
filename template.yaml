@@ -82,7 +82,6 @@ Resources:
         S3ExperimentBucket: !Ref S3ExperimentBucket
         SageMakerStateMachine: !GetAtt SageMakerMlOps.Outputs.SageMakerStateMachine
 #        EksStateMachine: !GetAtt EksMlOps.Outputs.EksStateMachine
-#        AmiStatemachine: !GetAtt AmiMlOps.AmiStateMachine
 
 Outputs:
   FrontEndURL:
