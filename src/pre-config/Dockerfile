@@ -5,7 +5,7 @@ ENV TORCHVISION_VERSION=0.4.0
 ENV CUDNN_VERSION=7.1.4.18-1+cuda9.0 
 ENV NCCL_VERSION=2.2.13-1+cuda9.0
 ENV MXNET_VERSION=1.5.0
-ENV HOROVOD_VERSION=0.17.0
+#ENV HOROVOD_VERSION=0.16.4
 ENV KERAS_VERSION=2.2.4
  
 RUN apt-get update && apt-get install -y --no-install-recommends --allow-downgrades --allow-change-held-packages \ 
@@ -57,7 +57,7 @@ RUN pip3 install tensorflow-gpu==${TENSORFLOW_VERSION} keras==${KERAS_VERSION} h
  
 # Install Horovod, temporarily using CUDA stubs 
 RUN ldconfig /usr/local/cuda-9.0/targets/x86_64-linux/lib/stubs && \ 
-    HOROVOD_GPU_ALLREDUCE=NCCL HOROVOD_WITH_TENSORFLOW=1 HOROVOD_WITH_PYTORCH=1 HOROVOD_WITH_MXNET=1 pip3 install --no-cache-dir horovod==${HOROVOD_VERSION} && \ 
+    HOROVOD_GPU_ALLREDUCE=NCCL HOROVOD_WITH_TENSORFLOW=1 HOROVOD_WITH_PYTORCH=1 HOROVOD_WITH_MXNET=1 pip3 install --no-cache-dir horovod && \ 
     ldconfig 
  
 # Create a wrapper for OpenMPI to allow running as root by default 
