@@ -11,8 +11,6 @@ class Form(FlaskForm):
 		validators=[InputRequired()],
 		choices=[
 			('coco', 'Common Objects in Context'),
-			('kitti', 'KITTI Vision Suite'),
-			('voc', 'PASCAL Visual Object Classes'),
 			('fashion', 'Fashion-MNIST')
 		]
 	)
