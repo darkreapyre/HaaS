@@ -27,7 +27,7 @@ Resources:
     Description: Training experiment data.
     DeletionPolicy: Retain
     Properties:
-      BucketName: !Sub ${AWS::StackName}-training-experiments-${AWS::Region}
+#      BucketName: !Sub ${AWS::StackName}-training-experiments-${AWS::Region}
       VersioningConfiguration:
         Status: Enabled
   PreConfig:
@@ -81,7 +81,6 @@ Resources:
         S3BootstrapBucket: !Ref S3BootstrapBucket
         S3ExperimentBucket: !Ref S3ExperimentBucket
         SageMakerStateMachine: !GetAtt SageMakerMlOps.Outputs.SageMakerStateMachine
-#        EksStateMachine: !GetAtt EksMlOps.Outputs.EksStateMachine
 
 Outputs:
   FrontEndURL:
@@ -91,5 +90,5 @@ Outputs:
     Description: S3 Bucekt container ML Experiment data.
     Value: !Ref S3ExperimentBucket
   MlFlowURL:
-    Description: URL for MlFlow Experiment DashboardURL
+    Description: URL for MlFlow Experiment DashboardURL.
     Value: !GetAtt MlFlowDeployment.Outputs.Endpoint
