@@ -58,10 +58,10 @@ parser.add_argument('--dataset-path', help='Path to the training dataset.',
                     dest='dataset_path', type=str)
 parser.add_argument('--output-path', help='Path to the trained model output.',
                     dest='output_path', type=str)
-parser.add_argument('--tracking-uri', help='MlFlow Tracking API URL.',
-                    dest='tracking_uri', type=str)
-parser.add_argument('--experiment-name', help='MlFlow Experiment Name.',
-                    dest='experiment_name', type=str)
+# parser.add_argument('--tracking-uri', help='MlFlow Tracking API URL.',
+#                     dest='tracking_uri', type=str)
+# parser.add_argument('--experiment-name', help='MlFlow Experiment Name.',
+#                     dest='experiment_name', type=str)
 parser.add_argument('--dataset', help='Training dataset Name.',
                     dest='dataset_type')
 
@@ -211,15 +211,15 @@ if verbose:
     print('Test loss:', score[0])
     print('Test accuracy:', score[1])
 
-if hvd.rank() == 0:
-    mlflow.tracking.set_tracking_uri(args.tracking_uri)
-    experiment_id = mlflow.create_experiment(args.experiment_name)
-    with mlflow.start_run(experiment_id=experiment_id) as run:
-        mlflow.log_param('epochs', args.epochs)
-        mlflow.log_param('batch_size', args.batch_size)
-        mlflow.log_param('momentum', args.momentum)
-        mlflow.log_param('weight_decay', args.wd)
-        mlflow.log_param('learning_rate', args.base_lr)
-        mlflow.log_metric('loss', score[0])
-        mlflow.log_metric('accuracy', score[1])
-        mlflow.log_artifacts(args.output_path, 'output')
+# if hvd.rank() == 0:
+#     mlflow.tracking.set_tracking_uri(args.tracking_uri)
+#     experiment_id = mlflow.create_experiment(args.experiment_name)
+#     with mlflow.start_run(experiment_id=experiment_id) as run:
+#         mlflow.log_param('epochs', args.epochs)
+#         mlflow.log_param('batch_size', args.batch_size)
+#         mlflow.log_param('momentum', args.momentum)
+#         mlflow.log_param('weight_decay', args.wd)
+#         mlflow.log_param('learning_rate', args.base_lr)
+#         mlflow.log_metric('loss', score[0])
+#         mlflow.log_metric('accuracy', score[1])
+#         mlflow.log_artifacts(args.output_path, 'output')
