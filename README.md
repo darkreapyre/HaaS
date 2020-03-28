@@ -39,7 +39,7 @@ The following list of requirements need to be implemented in the model training 
         ```
 5. All command line parameters Hyper-parameters, that will be executed by the `train.py` script must be configured in the `experiment_config.json` configuration file as a **JSON string** for example:
     ```json
-    "Hyperparameters": "{'epochs': '50', 'batch_size': '1', 'steps': '10000', 'backbone': 'resnet50'}"
+    "Hyperparameters": "{'epochs': '40', 'batch_size': '32'}"
     ```
 6. If any "local" directories need to be created, for example the `snapshot_path`, the directories need to be created within the `train.py` script.
 
@@ -71,7 +71,7 @@ The following is a list of requirements that need to be implemented within he mo
         mlflow.log_metric('accuracy', score[1])
         mlflow.log_artifacts(args.output_path, 'output')
     ```
->__Note:__ For further examples of how to configure these parameters, please see the GitHub repos [here](https://github.com/darkreapyre/keras-retinanet/blob/master/train.py).
+>__Note:__ For further examples of how to configure these parameters, please see the **master** branch.
 
 ## Deployment
 
