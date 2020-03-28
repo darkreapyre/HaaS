@@ -2,12 +2,6 @@
 
 In this tutorial, you will learn how to apply Horovod to a [WideResNet](https://arxiv.org/abs/1605.07146) model, trained on the [Fashion MNIST](https://github.com/zalandoresearch/fashion-mnist) dataset.
 
-## Prerequisites
-
-If this is an in-person session, hosts will set up VM for you and provide you credentials to Jupyter Lab.  If you're working on this tutorial on your own, please follow installation instructions in [INSTALL.md](INSTALL.md).
-
-Let's begin!
-
 ## Connect to Jupyter Lab
 
 When you open Jupyter Lab in your browser, you will see a screen similar to this:
