@@ -20,7 +20,7 @@ The first file contains the Keras model that does not have any Horovod code, whi
 
 Why Keras?  We chose Keras due to its simplicity, and the fact that it will be the way to define models in TensorFlow 2.0.
 
-## Run fashion_mnist.py
+## Run `fashion_mnist.py`
 
 Before we go into modifications required to scale our WideResNet model, let's run a single-GPU version of the model.
 
